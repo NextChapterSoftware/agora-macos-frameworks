@@ -19,7 +19,7 @@
  *  Event of the user joined the channel.
  *
  *  @param engine  The engine kit
- *  @param channel The channel name
+ *  @param channelId The channel name
  *  @param userId  The remote user id
  *  @param elapsed The elapsed time (ms) from session beginning
  */
@@ -29,7 +29,7 @@
  *  Event of the user rejoined the channel
  *
  *  @param engine  The engine kit
- *  @param channel The channel name
+ *  @param channelId The channel name
  *  @param userId  The user id
  *  @param elapsed The elapsed time (ms) from session beginning
  */
@@ -110,7 +110,7 @@
 /** The first audio frame received and decoded from the remote user.
 
  @param engine  The AgoraRtcEngineKit object.
- @param uid     Remote user ID.
+ @param userId     Remote user ID.
  @param elapsed Time elapsed (ms) from calling `joinChannelByToken` until this callback is triggered.
  */
 - (void)rtcEngine:(AgoraRtcEngineKit * _Nonnull)engine firstRemoteAudioFrameOfUid:(NSString * _Nonnull)userId elapsed:(NSInteger)elapsed;
@@ -158,14 +158,6 @@
  */
 - (void)rtcEngine:(AgoraRtcEngineKit * _Nonnull)engine remoteAudioStateChangedOfUid:(NSString * _Nonnull)userId state:(AgoraAudioRemoteState)state reason:(AgoraAudioRemoteReason)reason elapsed:(NSInteger)elapsed;
 
-/** A remote user's audio was muted or unmuted.
-
- @param engine AgoraRtcEngineKit object
- @param muted  Mute or unmute
- @param uid    Remote user ID
- */
-- (void)rtcEngine:(AgoraRtcEngineKit * _Nonnull)engine didAudioMuted:(BOOL)muted byUid:(NSString * _Nonnull)uid;
-
 /**
  *  The sdk reports who is active speaker in the channel
  *
@@ -188,7 +180,7 @@
 /**
   * Occurs when the audio subscribe state changed.
   *
-  * @param channel The channel name of user joined.
+  * @param channelId The channel name of user joined.
   * @param uid The remote user ID that is subscribed to.
   * @param oldState The old state of the audio stream subscribe : #AgoraStreamSubscribeState.
   * @param newState The new state of the audio stream subscribe : #AgoraStreamSubscribeState.
@@ -203,7 +195,7 @@ elapseSinceLastState:(int)elapseSinceLastState;
 /**
  * Occurs when the audio publish state changed.
  *
- * @param channel The channel name of user joined.
+ * @param channelId The channel name of user joined.
  * @param oldState The old state of the audio stream publish : #AgoraStreamPublishState.
  * @param newState The new state of the audio stream publish : #AgoraStreamPublishState.
  * @param elapseSinceLastState The time elapsed (ms) from the old state to the new state.
@@ -244,7 +236,7 @@ elapseSinceLastState:(int)elapseSinceLastState;
  */
 - (void)rtcEngine:(AgoraRtcEngineKit * _Nonnull)engine videoSizeChangedOfUid:(NSString * _Nonnull)userId size:(CGSize)size rotation:(NSInteger)rotation;
 - (void)rtcEngine:(AgoraRtcEngineKit* _Nonnull)engine contentInspectResult:(AgoraContentInspectResult)result;
-- (void)rtcEngine:(AgoraRtcEngineKit* _Nonnull)engine snapshotTaken:(NSString* _Nonnull)channel uid:(NSUInteger)uid filePath:(NSString* _Nonnull)filePath width:(NSInteger)width height:(NSInteger)height errCode:(NSInteger)errCode;
+- (void)rtcEngine:(AgoraRtcEngineKit* _Nonnull)engine snapshotTaken:(NSUInteger)uid filePath:(NSString* _Nonnull)filePath width:(NSInteger)width height:(NSInteger)height errCode:(NSInteger)errCode;
 /** Occurs when the local video stream state changes
  *
  * This callback indicates the state of the local video stream, including camera capturing and video encoding,
@@ -282,6 +274,15 @@ elapseSinceLastState:(int)elapseSinceLastState;
 - (void)rtcEngine:(AgoraRtcEngineKit * _Nonnull)engine remoteVideoStateChangedOfUid:(NSString * _Nonnull)userId state:(AgoraVideoRemoteState)state reason:(AgoraVideoRemoteReason)reason elapsed:(NSInteger)elapsed;
 
 /**
+ *  Event of remote user audio muted or unmuted
+ *
+ *  @param engine The engine kit
+ *  @param muted  Muted or unmuted
+ *  @param userId The remote user id
+ */
+- (void)rtcEngine:(AgoraRtcEngineKit * _Nonnull)engine didAudioMuted:(BOOL)muted byUid:(NSString * _Nonnull)userId;
+
+/**
  *  Event of remote user video muted or unmuted
  *
  *  @param engine The engine kit
@@ -308,6 +309,15 @@ elapseSinceLastState:(int)elapseSinceLastState;
  */
 - (void)rtcEngine:(AgoraRtcEngineKit * _Nonnull)engine didLocalVideoEnabled:(BOOL)enabled byUid:(NSString * _Nonnull)userId;
 
+/**
+ *  Occurs when the remote user state is updated.
+ *
+ *  @param engine  The engine kit
+ *  @param userId  The remote user id
+ *  @param state   The remote user state
+ */
+- (void)rtcEngine:(AgoraRtcEngineKit * _Nonnull)engine remoteUserStateChangedOfUid:(NSString * _Nonnull)userId state:(NSUInteger)state;
+
 - (void)rtcEngine:(AgoraRtcEngineKit * _Nonnull)engine publishingRequestReceivedFromUid:(NSString * _Nonnull)userId;
 - (void)rtcEngine:(AgoraRtcEngineKit * _Nonnull)engine publishingRequestAnsweredByOwner:(NSString * _Nonnull)userId accepted:(BOOL)accepted error:(AgoraErrorCode)error;
 - (void)rtcEngine:(AgoraRtcEngineKit * _Nonnull)engine unpublishingRequestReceivedFromOwner:(NSString * _Nonnull)userId;
@@ -320,7 +330,7 @@ elapseSinceLastState:(int)elapseSinceLastState;
 
 /** Target bitrate updated.
  * @param engine       The AgoraRtcEngineKit object.
- * @param networkInfo  The uplink network info, including target bitrate bps.
+ * @param bweInfo  The uplink network info, including target bitrate bps.
 */
 - (void)rtcEngine:(AgoraRtcEngineKit *_Nonnull)engine uplinkNetworkInfoUpdate:(AgoraUplinkNetworkInfo *_Nonnull)bweInfo;
 
@@ -377,7 +387,8 @@ didReceiveChannelMediaRelayEvent:(AgoraChannelMediaRelayEvent)event;
 
 /** Occurs when the video subscribe state changed.
  *
- * @param channel The channel name of user joined.
+ * @param engine AgoraRtcEngineKit object.
+ * @param channelId The channel name of user joined.
  * @param uid The remote user ID that is subscribed to.
  * @param oldState The old state of the video stream subscribe : #AgoraStreamSubscribeState.
  * @param newState The new state of the video stream subscribe : #AgoraStreamSubscribeState.
@@ -392,7 +403,8 @@ elapseSinceLastState:(int)elapseSinceLastState;
 /**
  * Occurs when the video publish state changed.
  *
- * @param channel The channel name of user joined.
+ * @param engine AgoraRtcEngineKit object.
+ * @param channelId The channel name of user joined.
  * @param oldState The old state of the video stream publish : #AgoraStreamPublishState.
  * @param newState The new state of the video stream publish : #AgoraStreamPublishState.
  * @param elapseSinceLastState The time elapsed (ms) from the old state to the new state.

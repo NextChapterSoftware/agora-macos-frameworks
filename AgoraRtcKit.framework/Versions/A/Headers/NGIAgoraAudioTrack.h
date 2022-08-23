@@ -17,6 +17,7 @@ class IAudioTrackStateObserver;
 class IAudioFilter;
 class IAudioSinkBase;
 class IMediaPacketReceiver;
+class IAudioEncodedFrameReceiver;
 /**
  * Properties of audio frames expected by a sink.
  *
@@ -54,6 +55,10 @@ public:
      * Work on the post audio processing.
      */
     PostAudioProcessing,
+    /**
+     * Work on the remote audio before mixing.
+     */
+    RemoteUserPlayback,
     /**
      * Work on the pcm source.
      */
@@ -414,8 +419,13 @@ struct RemoteAudioTrackStats {
    * audio downlink average process time
    */
   uint32_t downlink_process_time_ms;
-
+  /**
+   * audio base target level
+   */
   uint32_t target_level_base_ms;
+  /**
+   * audio average target level
+   */
   uint32_t target_level_prefered_ms;
   /**
    *  The count of 80 ms frozen in 2 seconds
@@ -452,6 +462,14 @@ struct RemoteAudioTrackStats {
   uint64_t publish_duration;
 
   int32_t e2e_delay_ms;
+  /**
+   * Quality of experience (QoE) of the local user when receiving a remote audio stream. See #EXPERIENCE_QUALITY_TYPE.
+   */
+  int qoe_quality;
+  /**
+   * The reason for poor QoE of the local user when receiving a remote audio stream. See #EXPERIENCE_POOR_REASON.
+   */
+  int32_t quality_changed_reason;
 
   RemoteAudioTrackStats() :
     uid(0),
@@ -481,7 +499,9 @@ struct RemoteAudioTrackStats {
     mos_value(0),
     total_active_time(0),
     publish_duration(0),
-    e2e_delay_ms(0){ }
+    e2e_delay_ms(0),
+    qoe_quality(0),
+    quality_changed_reason(0) {}
 };
 
 /**
@@ -527,25 +547,37 @@ class IRemoteAudioTrack : public IAudioTrack {
    */
   virtual int unregisterMediaPacketReceiver(IMediaPacketReceiver* packetReceiver) = 0;
 
-  /** enable sound position
-   
-   @param enabled enable/disable sound position:
-   - true: enable sound position.
-   - false: disable sound position.
-   @return
-   - 0: Success.
-   - < 0: Failure.
+  /**
+   * Registers an `IAudioEncodedFrameReceiver` object.
+   *
+   * You need to implement the `IAudioEncodedFrameReceiver` class in this method. Once you successfully register
+   * the media packet receiver, the SDK triggers the `onEncodedAudioFrameReceived` callback when it receives an
+   * audio packet.
+   *
+   * @param packetReceiver The pointer to the `IAudioEncodedFrameReceiver` object.
+   * @return
+   * - 0: Success.
+   * - < 0: Failure.
    */
-  virtual int enableSoundPositionIndication(bool enabled) = 0;
-  
+  virtual int registerAudioEncodedFrameReceiver(IAudioEncodedFrameReceiver* packetReceiver) = 0;
+
+  /**
+   * Releases the `IAudioEncodedFrameReceiver` object.
+   * @param packetReceiver The pointer to the `IAudioEncodedFrameReceiver` object.
+   * @return
+   * - 0: Success.
+   * - < 0: Failure.
+   */
+  virtual int unregisterAudioEncodedFrameReceiver(IAudioEncodedFrameReceiver* packetReceiver) = 0;
+
   /** Sets the sound position and gain
-   
+
    @param pan The sound position of the remote user. The value ranges from -1.0 to 1.0:
    - 0.0: the remote sound comes from the front.
    - -1.0: the remote sound comes from the left.
    - 1.0: the remote sound comes from the right.
    @param gain Gain of the remote user. The value ranges from 0.0 to 100.0. The default value is 100.0 (the original gain of the remote user). The smaller the value, the less the gain.
-   
+
    @return
    - 0: Success.
    - < 0: Failure.

@@ -122,7 +122,7 @@ class IRecordingDeviceSource : public RefCountInterface {
    * - 0: Success.
    * - < 0: Failure.
    */
-    virtual int initRecording() = 0;
+    virtual int initRecording(const char* deviceName = NULL) = 0;
 
   /**
    * Start the recording device.

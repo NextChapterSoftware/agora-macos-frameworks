@@ -31,7 +31,7 @@ __attribute__((visibility("default"))) @interface AgoraRtcIntOptional : NSObject
 /**
  * Creates optional with value
  
- * @param aValue store int value for optional
+ * @param aValue store optional int value
  * @return guaranteed nonnull optional
  */
 + (nonnull instancetype)of:(int)aValue;
@@ -64,7 +64,7 @@ __attribute__((visibility("default"))) @interface AgoraRtcUIntOptional: NSObject
 /**
  * Creates optional with value
  
- * @param aValue store uint value for optional
+ * @param aValue store optional uint value
  * @return guaranteed nonnull optional
  */
 + (nonnull instancetype)of:(unsigned int)aValue;
@@ -97,7 +97,7 @@ __attribute__((visibility("default"))) @interface AgoraRtcBoolOptional: NSObject
 /**
  * Creates optional with value
  
- * @param aValue store bool value for optional
+ * @param aValue store optional bool value
  * @return guaranteed nonnull optional
  */
 + (nonnull instancetype)of:(BOOL)aValue;
@@ -132,7 +132,7 @@ __attribute__((visibility("default"))) @interface AgoraRtcDoubleOptional: NSObje
 /**
  * Creates optional with value
  
- * @param aValue store double value for optional
+ * @param aValue store optional double value
  * @return guaranteed nonnull optional
  */
 + (nonnull instancetype)of:(double)aValue;

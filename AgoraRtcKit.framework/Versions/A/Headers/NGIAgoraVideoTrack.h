@@ -237,11 +237,14 @@ struct LocalVideoTrackStats {
    * The average time diff between frame captured and framed encoded.
    */
   uint32_t uplink_cost_time_ms;
-
   /** Quality change of the local video in terms of target frame rate and
    * target bit rate in this reported interval. See #QUALITY_ADAPT_INDICATION.
    */
   QUALITY_ADAPT_INDICATION quality_adapt_indication;
+  /**
+   * The video packet loss rate (%) from the local client to the Agora edge server before applying the anti-packet loss strategies.
+   */
+   unsigned short txPacketLossRate;
 
   LocalVideoTrackStats() : number_of_streams(0),
                            bytes_major_stream(0),
@@ -265,7 +268,8 @@ struct LocalVideoTrackStats {
                            height(0),
                            encoder_type(0),
                            uplink_cost_time_ms(0),
-                           quality_adapt_indication(ADAPT_NONE) {}
+                           quality_adapt_indication(ADAPT_NONE),
+                           txPacketLossRate(0) {}
 };
 
 /**
@@ -433,12 +437,13 @@ struct RemoteVideoTrackStats {
    The total publish duration (ms) of the remote video stream.
    */
   uint64_t publishDuration;
+  int superResolutionType;
 
   RemoteVideoTrackStats() : uid(0), delay(0), width(0), height(0),
                             receivedBitrate(0), decoderOutputFrameRate(0), rendererOutputFrameRate(0),
                             frameLossRate(0), packetLossRate(0), rxStreamType(VIDEO_STREAM_HIGH),
                             totalFrozenTime(0), frozenRate(0), totalDecodedFrames(0), avSyncTimeMs(0),
-                            downlink_process_time_ms(0), frame_render_delay_ms(0), totalActiveTime(0), publishDuration(0) {}
+                            downlink_process_time_ms(0), frame_render_delay_ms(0), totalActiveTime(0), publishDuration(0), superResolutionType(0) {}
 };
 
 /**

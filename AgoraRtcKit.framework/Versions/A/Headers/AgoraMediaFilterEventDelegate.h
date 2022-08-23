@@ -23,7 +23,7 @@
 - (void)onExtensionStarted:(NSString * __nullable)provider
                  extension:(NSString * __nullable)extension;
 
-- (void)onExtensionError:(NSString * __nullable)provider
+- (void)onExtensionErrored:(NSString * __nullable)provider
                  extension:(NSString * __nullable)extension
                      error:(int)error
                    message:(NSString * __nullable)message;

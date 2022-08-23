@@ -71,7 +71,7 @@ NS_ASSUME_NONNULL_BEGIN
  * - The space character.
  * - Punctuation characters and other symbols, including: "!", "#", "$", "%", "&", "(", ")", "+", "-", ":", ";", "<", "=", ".", ">", "?", "@", "[", "]", "^", "_", " {", "}", "|", "~", ",".
  * @param delegate AgoraRtcEngineDelegate protocol.
- * @param options  The channel media options: \ref agora::rtc::ChannelMediaOptions::ChannelMediaOptions "ChannelMediaOptions"
+ * @param mediaOptions  The channel media options: \ref agora::rtc::ChannelMediaOptions::ChannelMediaOptions "ChannelMediaOptions"
  *
  * @return
  * - 0: Success.
@@ -119,7 +119,7 @@ NS_ASSUME_NONNULL_BEGIN
  @param mute * YES: Stops playing a specified user’s audio streams.
  * NO: Resumes playing a specified user’s audio streams.
  @param connection  {@link AgoraRtcConnection} by channelId and uid combine
- 
+
  @return * 0: Success.
 * <0: Failure.
  */
@@ -196,6 +196,25 @@ NS_ASSUME_NONNULL_BEGIN
                           mute:(BOOL)mute
                     connection:(AgoraRtcConnection * _Nonnull)connection;
 
+ /**
+   * Enables or disables the dual video stream mode.
+   *
+   * If dual-stream mode is enabled, the subscriber can choose to receive the high-stream
+   * (high-resolution high-bitrate video stream) or low-stream (low-resolution low-bitrate video
+   * stream) video using {@link setRemoteVideoStreamType setRemoteVideoStreamType}.
+   *
+   * @param sourceType The video source type.
+   * @param enabled
+   * - true: Enable the dual-stream mode.
+   * - false: (default) Disable the dual-stream mode.
+   * @param streamConfig The minor stream config
+   * @param connection An output parameter which is used to control different connection instances.
+   */
+- (int)enableDualStreamModeEx:(AgoraVideoSourceType)sourceType
+                      enabled:(BOOL)enabled
+                 streamConfig:(AgoraSimulcastStreamConfig*)streamConfig
+                   connection:(AgoraRtcConnection* _Nonnull)connection;
+
 /**
  * Sets the remote video stream type.
  *
@@ -219,56 +238,6 @@ NS_ASSUME_NONNULL_BEGIN
 - (int)setRemoteVideoStreamEx:(NSUInteger)uid
                          type:(AgoraVideoStreamType)streamType
                    connection:(AgoraRtcConnection * _Nonnull)connection;
-/**
-   * Sets the remote video subscription options
-   *
-   *
-   * @param uid ID of the remote user sending the video stream.
-   * @param options Sets the video subscription options.
-   * @param connection  {@link AgoraRtcConnection} by channelId and uid combine
-   * @return
-   * - 0: Success.
-   * - < 0: Failure.
-   */
-- (int)setRemoteVideo:(NSUInteger)uid SubscriptionOptionsEx:(AgoraVideoSubscriptionOptions* _Nonnull)options
-           connection:(AgoraRtcConnection* _Nonnull)connection;
-
-/** Pushes the external audio frame to the Agora SDK for encoding.
- *
- * @param data      External audio data.
- * @param sourceId  The audio track ID.
- * @param timestamp Time stamp of the external audio frame to be synchronized with the external video source.
- * @return * 0: Success.
- * <0: Failure.
- */
-- (int)pushExternalAudioFrameExNSData:(NSData * _Nonnull)data
-                             sourceId:(NSInteger)sourceId
-                            timestamp:(NSTimeInterval)timestamp __deprecated_msg("pushExternalAudioFrameExRawData:sourceId:timestamp instead.");
-
-/** Pushes the external audio frame to the Agora SDK for encoding.
-
- * @param data      External audio data.
- * @param samples   Number of samples for the push.
- * @param sourceId  The audio track ID.
- * @param timestamp Time stamp of the external audio frame to be synchronized with the external video source.
- * @return * 0: Success.
- * <0: Failure.
- */
-
-- (int)pushExternalAudioFrameExRawData:(void * _Nonnull)data
-                               samples:(NSInteger)samples
-                              sourceId:(NSInteger)sourceId
-                             timestamp:(NSTimeInterval)timestamp;
-
-/**
- * Pushes the external audio frame to the sample buffer for encoding.
- *
- * @param sampleBuffer Sample buffer
- * @return
- * -  0: Success.
- * - <0: Failure.
- */
-- (int)pushExternalAudioFrameExSampleBuffer:(CMSampleBufferRef _Nonnull)sampleBuffer;
 
 /**
  * Pushes the encoded external video frame to specified connection in Agora SDK.
@@ -287,6 +256,20 @@ NS_ASSUME_NONNULL_BEGIN
 - (int)pushExternalEncodedVideoFrameEx:(NSData* _Nonnull)frame
                                   info:(AgoraEncodedVideoFrameInfo * _Nonnull)info
                             connection:(AgoraRtcConnection * _Nonnull)connection;
+
+/**
+   * Sets the remote video subscription options
+   *
+   *
+   * @param uid ID of the remote user sending the video stream.
+   * @param options Sets the video subscription options.
+   * @param connection  {@link AgoraRtcConnection} by channelId and uid combine
+   * @return
+   * - 0: Success.
+   * - < 0: Failure.
+   */
+- (int)setRemoteVideo:(NSUInteger)uid SubscriptionOptionsEx:(AgoraVideoSubscriptionOptions* _Nonnull)options
+           connection:(AgoraRtcConnection* _Nonnull)connection;
 
 /**
  * Pushes the external video frame.
@@ -315,19 +298,12 @@ NS_ASSUME_NONNULL_BEGIN
  * After receiving the [didUpdatedUserInfo]([AgoraRtcEngineDelegate rtcEngine:didUpdatedUserInfo:withUid:]) callback, you can call this method to get the user ID of the remote user from the `userInfo` object by passing in the user account.
 
  * @param userAccount The user account of the user. Ensure that you set this parameter.
- * @param [in,out] userInfo  A userInfo object that identifies the user:
- * - Input: A userInfo object.
- * - Output: A userInfo object that contains the user account and user ID of the user.
- * @param channelId The channel name.
- * @param localUserAccount The user account of the local user.
- * @return
- * - 0: Success.
- * - < 0: Failure.
+ * @param connection  {@link AgoraRtcConnection} by channelId and uid combine
+ * @return An [AgoraUserInfo](AgoraUserInfo) object that contains the user account and user ID of the user.
  */
-- (int)getUserInfoWithUserAccount:(NSString * _Nonnull)userAccount
-                         userInfo:(AgoraUserInfo *_Nullable* _Nullable)userInfo
-                        channelId:(NSString* _Nonnull)channelId
-                 localUserAccount:(NSString* _Nonnull)localUserAccount;
+- (AgoraUserInfo* _Nullable)getUserInfoByUserAccountEx:(NSString* _Nonnull)userAccount
+                                            connection:(AgoraRtcConnection * _Nonnull)connection
+                                             withError:(AgoraErrorCode* _Nullable)error;
 
 /** Gets the user information by passing in the user ID.
  *
@@ -338,19 +314,12 @@ NS_ASSUME_NONNULL_BEGIN
  * from the `userInfo` object by passing in the user ID.
  *
  * @param uid The user ID of the remote user. Ensure that you set this parameter.
- * @param[in,out] userInfo A userInfo object that identifies the user:
- * - Input: A userInfo object.
- * - Output: A userInfo object that contains the user account and user ID of the user.
- * @param channelId The channel name.
- * @param localUserAccount The user account of the local user.
- * @return
- * - 0: Success.
- * - < 0: Failure.
+ * @param connection  {@link AgoraRtcConnection} by channelId and uid combine
+ * @return An [AgoraUserInfo](AgoraUserInfo) object that contains the user account and user ID of the user.
  */
-- (int)getUserInfoWithUserId:(NSUInteger)uid
-                    userInfo:(AgoraUserInfo *_Nullable* _Nullable)userInfo
-                   channelId:(NSString* _Nonnull)channelId
-            localUserAccount:(NSString* _Nonnull)localUserAccount;
+- (AgoraUserInfo* _Nullable)getUserInfoByUidEx:(NSUInteger)uid
+                                    connection:(AgoraRtcConnection * _Nonnull)connection
+                                     withError:(AgoraErrorCode* _Nullable)error;
 
 /**
  * Gets the connection state of the SDK.
@@ -362,24 +331,29 @@ NS_ASSUME_NONNULL_BEGIN
 - (AgoraConnectionState)getConnectionStateEx:(AgoraRtcConnection * _Nonnull)connection;
 
 #if (!(TARGET_OS_IPHONE) && (TARGET_OS_MAC))
-/** Enables loopback recording.
- *
- * If you enable loopback recording, the output of the default sound card is mixed into
- * the audio stream sent to the other end.
- *
- * @note This method is for MacOS only.
- *
- * @param connection  {@link AgoraRtcConnection} by channelId and uid combine
- * @param enabled Sets whether to enable/disable loopback recording.
- * - true: Enable loopback recording.
- * - false: (Default) Disable loopback recording.
- *
- * @return
- * - 0: Success.
- * - < 0: Failure.
- */
+/** Enables loopback sampling. (macOS only)
+  * If you enable loopback sampling, the output of the sound card is mixed into the audio stream sent to the other end.
+  * You can call this method either before or after joining a channel.
+  
+  * *Note:**
+  * macOS does not support loopback sampling of the default sound card. If you need to use this method,
+  * please use a virtual sound card and pass its name to the `deviceName` parameter. Agora has tested and recommends using soundflower.
+
+  * @param enabled Sets whether to enable/disable loopback sampling.
+  * YES: Enable loopback sampling.
+  * NO: (Default) Disable loopback sampling.
+
+  * @param deviceName Pointer to the device name of the sound card. The default value is nil (default sound card).
+  * If you use a virtual sound card like "Soundflower", set this parameter as the name of the sound card, "Soundflower",
+  * and the SDK will find the corresponding sound card and start capturing.
+  * @param connection  {@link AgoraRtcConnection} by channelId and uid combine
+  * @return
+  * 0: Success.
+  * < 0: Failure.
+  */
 - (int)enableLoopbackRecordingEx:(BOOL)enabled
-                    connection:(AgoraRtcConnection * _Nonnull)connection;;
+                      deviceName:(NSString* _Nullable)deviceName
+                      connection:(AgoraRtcConnection * _Nonnull)connection;;
 #endif
 
 - (int)sendCustomReportMessageEx:(NSString * _Nullable)messageId
@@ -414,7 +388,7 @@ This method requires hardware support.
 
  @param gain Gain of the remote user. The value ranges from 0.0 to 100.0. The default value is 100.0 (the original gain of the remote user). The smaller the value, the less the gain.
  @param connection  {@link AgoraRtcConnection} by channelId and uid combine
- 
+
  @return * 0: Success.
 * < 0: Failure.
  */

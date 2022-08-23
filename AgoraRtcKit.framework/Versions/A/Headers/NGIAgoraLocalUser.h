@@ -473,7 +473,7 @@ class ILocalUser {
    - This method requires hardware support. For the best sound positioning, we recommend using a wired headset.
    - Ensure that you call this method after joining a channel.
 
-   @param uid The ID of the remote user.
+   @param userId The ID of the remote user.
    @param pan The sound position of the remote user. The value ranges from -1.0 to 1.0:
    - 0.0: the remote sound comes from the front.
    - -1.0: the remote sound comes from the left.
@@ -496,10 +496,11 @@ class ILocalUser {
    - < 0: Failure.
    */
   virtual int enableSpatialAudio(bool enabled) = 0;
-  
+
   /** Sets remote user parameters for spatial audio
    
-   @param params spatial audio parameters
+   @param userId The ID of the remote user.
+   @param param spatial audio parameters
    
    @return
    - 0: Success.
@@ -579,6 +580,30 @@ class ILocalUser {
   virtual int setMixedAudioFrameParameters(size_t numberOfChannels,
                                            uint32_t sampleRateHz,
                                            int samplesPerCall = 0) = 0;
+
+  /**
+   * Sets the audio frame parameters for the \ref agora::media::IAudioFrameObserver::onEarMonitoringAudioFrame
+   * "onEarMonitoringAudioFrame" callback.
+   * @param enabled Determines whether to enable ear monitoring audio frame observer.
+   * - true: Enable ear monitoring audio frame observer.
+   * - false: Disable ear monitoring audio frame observer.
+   * @param numberOfChannels The number of audio channels of the audio frame in the `onEarMonitoringAudioFrame` callback.
+   * - 1: Mono.
+   * - 2: Stereo.
+   * @param sampleRateHz The sample rate (Hz) of the audio frame in the `onEarMonitoringAudioFrame` callback. You can
+   * set it as 8000, 16000, 32000, 44100, or 48000.
+   * @param mode Use mode of the audio frame. See #RAW_AUDIO_FRAME_OP_MODE_TYPE.
+   * @param samplesPerCall The number of samples of the audio frame.   *
+   *
+   * @return
+   * - 0: Success.
+   * - < 0: Failure.
+   */
+  virtual int setEarMonitoringAudioFrameParameters(bool enabled,
+                                                   size_t numberOfChannels,
+                                                   uint32_t sampleRateHz,
+                                                   RAW_AUDIO_FRAME_OP_MODE_TYPE mode = RAW_AUDIO_FRAME_OP_MODE_READ_ONLY,
+                                                   int samplesPerCall = 0) = 0;
 
   /**
    * Sets the audio frame parameters for the \ref agora::media::IAudioFrameObserver::onPlaybackAudioFrameBeforeMixing
@@ -713,6 +738,9 @@ class ILocalUser {
    * - < 0: Failure.
    */
   virtual int unregisterVideoFrameObserver(IVideoFrameObserver2* observer) = 0;
+
+  virtual int setVideoSubscriptionOptions(user_id_t userId,
+                                          const VideoSubscriptionOptions& options) = 0;
 
   /**
    * Subscribes to the video of a specified remote user in the channel.
@@ -1136,6 +1164,21 @@ class ILocalUserObserver {
   /** Occurs when the first remote audio frame is received.
    *
    * @param userId ID of the remote user.
+   * @param isFallbackOrRecover Whether the remotely subscribed media stream
+   * falls back to audio-only or switches back to the video:
+   * - true: The remotely subscribed media stream falls back to audio-only
+   * due to poor network conditions.
+   * - false: The remotely subscribed media stream switches back to the
+   * video stream after the network conditions improved.
+   **/
+  virtual void onRemoteSubscribeFallbackToAudioOnly(user_id_t userId, bool isFallbackOrRecover) {
+    (void)userId;
+    (void)isFallbackOrRecover;
+  }
+
+  /** Occurs when the first remote audio frame is received.
+   *
+   * @param userId ID of the remote user.
    * @param elapsed The time (ms) since the user connects to an Agora channel.
    **/
   virtual void onFirstRemoteAudioFrame(user_id_t userId, int elapsed) = 0;
@@ -1168,6 +1211,16 @@ class ILocalUserObserver {
    * @param elapsed The time (ms) since the user connects to an Agora channel.
    */
   virtual void onFirstRemoteVideoDecoded(user_id_t userId, int width, int height, int elapsed) = 0;
+
+  /**
+   * The local or remote video size or rotation changed.
+   *
+   * @param uid User ID of the user whose video size or rotation has changed.
+   * @param width Width (pixels) of the video stream.
+   * @param height Height (pixels) of the video stream.
+   * @param rotation Rotation [0 to 360).
+   */
+  virtual void onVideoSizeChanged(user_id_t userId, int width, int height, int rotation) = 0;
 
   /**
    * The media information of a specified user.
@@ -1217,28 +1270,6 @@ class ILocalUserObserver {
    * datastream from this connection.
    */
   virtual void onStreamMessage(user_id_t userId, int streamId, const char* data, size_t length) {}
-  /**
-   * The remote user state information.
-   */
-  enum REMOTE_USER_STATE {
-    /**
-     * The remote user has muted the audio.
-     */
-    PEER_STATE_MUTE_AUDIO = (1 << 0),
-    /**
-     * The remote user has muted the video.
-     */
-    PEER_STATE_MUTE_VIDEO = (1 << 1),
-    /**
-     * The remote user has enabled the video, which includes video capturing and encoding.
-     */
-    PEER_STATE_ENABLE_VIDEO = (1 << 4),
-    /**
-     * The remote user has enabled the local video capturing.
-     */
-    PEER_STATE_ENABLE_LOCAL_VIDEO = (1 << 8),
-
-  };
 
   /**
    * Occurs when the remote user state is updated.

@@ -23,31 +23,6 @@ NS_ASSUME_NONNULL_BEGIN
 @protocol AgoraRtcMediaPlayerProtocol <NSObject>
 
 /**
- * @brief The player requests to read the data callback, you need to fill the specified length of data into the buffer
- * @param playerKit the player instance. {@link AgoraRtcMediaPlayerProtocol}.
- * @param buffer the buffer pointer that you need to fill data.
- * @param bufferSize the bufferSize need to fill of the buffer pointer.
- * @return you need return offset value if succeed. return 0 if failed.
- */
-typedef int(^AgoraRtcMediaPlayerCustomSourceOnReadCallback)(id<AgoraRtcMediaPlayerProtocol> _Nonnull playerKit, unsigned char * _Nullable buffer, int bufferSize);
-
-/**
- * @brief The Player seek event callback, you need to operate the corresponding stream seek operation, You can refer to the definition of lseek() at https://man7.org/linux/man-pages/man2/lseek.2.html
- * @param playerKit the player instance. {@link AgoraRtcMediaPlayerProtocol}.
- * @param offset the value of seek offset,
- * @param whence the postion of start seeking, the directive whence as follows:
- * SEEK_SET : The file offset is set to offset bytes.
- * SEEK_CUR : The file offset is set to its current location plus offset bytes.
- * SEEK_END : The file offset is set to the size of the file plus offset bytes.
- * 65536 - AVSEEK_SIZE : Optional. Passing this as the "whence" parameter to a seek function causes it to return the filesize without seeking anywhere.
- * @return
- * whence == 65536, return filesize if you need.
- * whence >= 0 && whence < 3 , return offset value if succeed. return -1 if failed.
- */
-typedef long long(^AgoraRtcMediaPlayerCustomSourceOnSeekCallback)(id<AgoraRtcMediaPlayerProtocol> _Nonnull playerKit, long long offset, int whence);
-
-
-/**
  * Get unique media player id of the media player entity.
  * @return
  * - >= 0: The mediaPlayerId of this media player entity.
@@ -63,6 +38,15 @@ typedef long long(^AgoraRtcMediaPlayerCustomSourceOnSeekCallback)(id<AgoraRtcMed
  */
 - (int)open:(NSString *)url startPos:(NSInteger)startPos;
 
+
+/**
+ * Opens a media file with MediaSource
+ * @param source see `AgoraMediaSource`
+ * @return
+ * - 0: Success.
+ * - < 0: Failure.
+ */
+- (int)openWithMediaSource:(AgoraMediaSource *)source;
 
 /**
  * Open the Agora CDN media source.
@@ -219,7 +203,7 @@ typedef long long(^AgoraRtcMediaPlayerCustomSourceOnSeekCallback)(id<AgoraRtcMed
 
 /**
  * Slect playback audio track of the media file
- * @param speed the index of the audio track in meia file
+ * @param index the index of the audio track in meia file
  * @return
  * - 0: Success.
  * - < 0: Failure.
@@ -264,6 +248,9 @@ typedef long long(^AgoraRtcMediaPlayerCustomSourceOnSeekCallback)(id<AgoraRtcMed
 /**
  * @brief Turn mute on or off
  *
+ * @param isMute Whether the media source is mute.
+ *   YES: Yes.
+ *   NO: No.
  * @return mute Whether to mute on
  */
 - (int)mute:(bool)isMute;
@@ -322,7 +309,7 @@ typedef long long(^AgoraRtcMediaPlayerCustomSourceOnSeekCallback)(id<AgoraRtcMed
 /**
  * @brief Set video display mode
  *
- * @param renderMode Video display mode
+ * @param mode Video display mode
  * @return int < 0 on behalf of an error, the value corresponds to one of MEDIA_PLAYER_ERROR
  */
 - (int)setRenderMode:(AgoraMediaPlayerRenderMode)mode;
@@ -373,6 +360,7 @@ typedef long long(^AgoraRtcMediaPlayerCustomSourceOnSeekCallback)(id<AgoraRtcMed
 - (int)playPreloadedSrc:(NSString *)src;
 
 /** Set dual-mono output mode of the music file.
+  @param mode The audio dual mono mode. See AgoraAudioDualMonoMode.
 
   @return
   - 0: Success.
@@ -381,12 +369,13 @@ typedef long long(^AgoraRtcMediaPlayerCustomSourceOnSeekCallback)(id<AgoraRtcMed
 - (int)setAudioDualMonoMode:(AgoraAudioDualMonoMode)mode;
 
 /**
+ * @deprecated
  * Open media file or stream with custom soucrce.
  * The custom data source provides a data stream input callback, and the player will continue to call back this interface, requesting the user to fill in the data that needs to be played.
  *
  * @param startPos Set the starting position for playback, in seconds.
- * @param onReadDataCallBack  The player requests to read the data callback , see `AgoraRtcMediaPlayerOnReadCallback`
- * @param onSeekCallBack  The Player seek event callback, see `AgoraRtcMediaPlayerOnSeekCallback`
+ * @param onReadDataCallback  The player requests to read the data callback , see `AgoraRtcMediaPlayerOnReadCallback`
+ * @param onSeekCallback  The Player seek event callback, see `AgoraRtcMediaPlayerOnSeekCallback`
  * @return
  * - 0: Success.
  * - < 0: Failure.
@@ -395,12 +384,24 @@ typedef long long(^AgoraRtcMediaPlayerCustomSourceOnSeekCallback)(id<AgoraRtcMed
                  withPlayerOnReadData:(AgoraRtcMediaPlayerCustomSourceOnReadCallback)onReadDataCallback
                       andPlayerOnSeek:(AgoraRtcMediaPlayerCustomSourceOnSeekCallback)onSeekCallback;
 
+/**
+  * Set spatial audio params for the music file. It can be called after the media player
+  * was created.
+  *
+  * @params params See `AgoraSpatialAudioParams`. If it's
+  * not set, then the spatial audio will be disabled; or it will be enabled.
+  * @return
+  * - 0: Success.
+  * - < 0: Failure.
+  */
+- (int)setSpatialAudioParams:(AgoraSpatialAudioParams* _Nonnull)params;
+
 #pragma mark Callback Audio PCM Frame
 
 /**
  * Registers & unregister the player audio observer
  *
- * @param observer observer object, pass nil to unregister
+ * @param delegate observer object, pass nil to unregister
  * @return
  * - YES: Success.
  * - NO: Failure.
@@ -412,31 +413,109 @@ typedef long long(^AgoraRtcMediaPlayerCustomSourceOnSeekCallback)(id<AgoraRtcMed
 /**
  * Registers & unregister the player video observer
  *
- * @param observer observer object, pass nil to unregister.
+ * @param delegate observer object, pass nil to unregister.
  * @return
  * - YES: Success.
  * - NO: Failure.
  */
 - (BOOL)setVideoFrameDelegate:(id<AgoraRtcMediaPlayerVideoFrameDelegate> _Nullable)delegate;
 
-/**
-  * Set spatial audio params for the music file. It can be called after the media player
-  * was created.
-  *
-  * @param spatialAudioParams See `AgoraSpatialAudioParams`. If it's
-  * not set, then the spatial audio will be disabled; or it will be enabled.
-  * @return
-  * - 0: Success.
-  * - < 0: Failure.
-  */
-- (int)setSpatialAudioParams:(AgoraSpatialAudioParams* _Nonnull)params;
-
-
 - (int)registerMediaPlayerAudioSpectrumDelegate:(id<AgoraAudioSpectrumDelegate> _Nullable)delegate
                                    intervalInMS:(NSUInteger)intervalInMS;
 
 - (int)unregisterMediaPlayerAudioSpectrumDelegate:
     (id<AgoraAudioSpectrumDelegate> _Nullable)delegate;
+@end
+
+
+@protocol AgoraRtcMediaPlayerCacheManagerProtocol <NSObject>
+
+/**
+ * Get shared cacheManager instance.
+ * @return cacheManager instance.
+ */
++ (instancetype)sharedInstance;
+/**
+ * Remove all media resource cache files.
+ * @return
+ * - 0: Success.
+ * - < 0: Failure.
+ */
+- (int)removeAllCaches;
+/**
+ * Remove the latest media resource cache file.
+ * @return
+ * - 0: Success.
+ * - < 0: Failure.
+ */
+- (int)removeOldCache;
+/**
+ * Remove the cache file by uri, setting by MediaSource.
+ * @param uri URI，identify the uniqueness of the property, Set from `MeidaSource`
+ * @return
+ * - 0: Success.
+ * - < 0: Failure.
+ */
+- (int)removeCacheByUri:(NSString *)uri;
+/**
+ * Set cache file path that files will be saved to.
+ * @param cacheDir cacheDir path.
+ * @return
+ * - 0: Success.
+ * - < 0: Failure.
+ */
+- (int)setCacheDir:(NSString *)cacheDir;
+/**
+ * Set the maximum number of cached files.
+ * @param count maximum number of cached files.
+ * @return
+ * - 0: Success.
+ * - < 0: Failure.
+ */
+- (int)setMaxCacheFileCount:(NSInteger)count;
+/**
+ * Set the total size of the largest cache file.
+ * @param cacheSize total size of the largest cache file.
+ * @return
+ * - 0: Success.
+ * - < 0: Failure.
+ */
+- (int)setMaxCacheFileSize:(NSInteger)cacheSize;
+/**
+ * Set whether the player will clean up the cache in the order of resource usage.
+ * @param enable enable the player to automatically clear the cache.
+ * @return
+ * - 0: Success.
+ * - < 0: Failure.
+ */
+- (int)enableAutoRemoveCache:(BOOL)enable;
+/**
+ * Get the cache directory you have set.
+ * @return cacheDir
+ */
+- (NSString *)cacheDir;
+/**
+ * Get the maximum number of cached files.
+ * @return
+ * > 0: file count.
+ * - < 0: Failure.
+ */
+- (NSInteger)maxCacheFileCount;
+/**
+ * Get the total size of the largest cache file
+ * @return
+ * > 0: file size.
+ * - < 0: Failure.
+ */
+- (NSInteger)maxCacheFileSize;
+/**
+ * Get the number of all cache files.
+ * @return
+ * > 0: file count.
+ * - < 0: Failure.
+ */
+- (NSInteger)cacheFileCount;
 
 @end
+
 NS_ASSUME_NONNULL_END
