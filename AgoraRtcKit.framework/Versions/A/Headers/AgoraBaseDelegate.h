@@ -28,7 +28,7 @@
  * caches them in a mapping table object (`userInfo`), and triggers this callback on the local client.
  
  * @param uid The ID of the remote user.
- * @param info The `AgoraUserInfo` object that contains the user ID and user account of the remote user.
+ * @param userInfo The `AgoraUserInfo` object that contains the user ID and user account of the remote user.
  */
 - (void)rtcEngine:(AgoraRtcEngineKit * _Nonnull)engine didUserInfoUpdatedWithUserId:(NSUInteger)uid userInfo:(AgoraUserInfo* _Nonnull)userInfo;
 
@@ -173,6 +173,15 @@
  *  @param newRole the new role
  */
 - (void)rtcEngine:(AgoraRtcEngineKit * _Nonnull)engine didClientRoleChanged:(AgoraClientRole)oldRole newRole:(AgoraClientRole)newRole;
+
+/**
+ *  Event of cient role change. only take effect under broadcasting mode
+ *
+ *  @param engine The engine kit
+ *  @param reason The reason of the failure of the local user role switches
+ *  @param currentRole The current role of the user
+ */
+- (void)rtcEngine:(AgoraRtcEngineKit * _Nonnull)engine didClientRoleChangeFailed:(AgoraClientRoleChangeFailedReason)reason currentRole:(AgoraClientRole)currentRole;
 
 /**
  *  The statistics of the call when leave channel
@@ -333,14 +342,46 @@
 - (void)rtcEngine:(AgoraRtcEngineKit * _Nonnull)engine remoteVideoStats:(AgoraRtcRemoteVideoStats * _Nonnull)stats;
 
 - (void)rtcEngine:(AgoraRtcEngineKit * _Nonnull)engine rtmpStreamingChangedToState:(NSString * _Nonnull)url
-                                                                    state:(AgoraRtmpStreamPublishState)state
-                                                                  errCode:(AgoraRtmpStreamPublishError)errCode;
+                                                                    state:(AgoraRtmpStreamingState)state
+                                                                  errCode:(AgoraRtmpStreamingErrorCode)errCode;
+
+- (void)rtcEngine:(AgoraRtcEngineKit * _Nonnull)engine rtmpStreamingEventWithUrl:(NSString* _Nonnull)url eventCode:(AgoraRtmpStreamingEvent)eventCode;
 
 - (void)rtcEngine:(AgoraRtcEngineKit * _Nonnull)engine streamPublishedWithUrl:(NSString * _Nonnull)url errorCode:(AgoraErrorCode)errorCode;
 
 - (void)rtcEngine:(AgoraRtcEngineKit * _Nonnull)engine streamUnpublishedWithUrl:(NSString * _Nonnull)url;
 
 - (void)rtcEngineTranscodingUpdated:(AgoraRtcEngineKit * _Nonnull)engine;
+
+#pragma mark Face Detection Delegate Methods
+/**-----------------------------------------------------------------------------
+ * @name Face Detection Delegate Methods
+ * -----------------------------------------------------------------------------
+ */
+
+/** Reports the face detection result of the local user. (iOS only)
+
+ **Since:** v3.0.1.
+
+ Once you enable face detection by calling [enableFaceDetection]([AgoraRtcEngineKit enableFaceDetection:]), you can get the following information on the local user in real-time:
+
+ - The width and height of the local video.
+ - The position of the human face in the local video.
+ - The distance between the human face and the device screen. This value is based on the fitting calculation of the local video size and the position of the human face.
+
+ **Note**
+
+ - If the SDK does not detect a face, it reduces the frequency of this callback to reduce power consumption on the local device.
+ - The SDK stops triggering this callback when a human face is in close proximity to the screen.
+
+ @param engine AgoraRtcEngineKit object.
+ @param width The width (px) of the local video.
+ @param height The height (px) of the local video.
+ @param faces An AgoraFacePositionInfo array, which contains the information of the detected human face.
+
+ The number of the AgoraFacePositionInfo array depends on the number of human faces detected. If the array length is 0, it means that no human face is detected.
+ */
+- (void)rtcEngine:(AgoraRtcEngineKit* _Nonnull)engine facePositionDidChangeWidth:(int)width previewHeight:(int)height faces:(NSArray<AgoraFacePositionInfo*>* _Nullable)faces NS_SWIFT_NAME(rtcEngine(_:facePositionDidChangeWidth:previewHeight:faces:));
 
 @end
 

@@ -17,7 +17,7 @@ class IScreenCaptureObserver;
  */
 class IScreenCapturer : public RefCountInterface {
  public:
-#if defined(TARGET_OS_MAC) && !TARGET_OS_IPHONE
+#if defined (_WIN32) || (defined(__APPLE__) && TARGET_OS_MAC && !TARGET_OS_IPHONE)
   /**
    * Initializes the screen capturer by specifying a display ID.
    *
@@ -36,7 +36,9 @@ class IScreenCapturer : public RefCountInterface {
    * - < 0: Failure.
    */
   virtual int initWithDisplayId(uint32_t displayId, const Rectangle& regionRect) = 0;
-#elif defined(_WIN32)
+#endif
+
+#if defined(_WIN32) || (defined(__linux__) && !defined(__ANDROID__))
   /**
    * Initializes the screen capturer by specifying a screen Rect.
    *

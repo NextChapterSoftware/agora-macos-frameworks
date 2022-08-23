@@ -47,6 +47,35 @@ struct TConnectionInfo {
   TConnectionInfo() : id(-1), state(CONNECTION_STATE_DISCONNECTED), internalUid(0) {}
 };
 
+struct TConnectSettings {
+  /**
+   * The app ID.
+   */
+  const char* token;
+  /**
+  The channel name. It must be in the string format and not exceed 64 bytes in length. Supported character scopes are:
+   * - All lowercase English letters: a to z.
+   * - All uppercase English letters: A to Z.
+   * - All numeric characters: 0 to 9.
+   * - The space character.
+   * - Punctuation characters and other symbols, including: "!", "#", "$", "%", "&", "(", ")", "+",
+   * "-", ":", ";", "<", "=",
+   * ".", ">", "?", "@", "[", "]", "^", "_", " {", "}", "|", "~", ","
+  */
+  const char* channelId;
+  /**
+  The ID of the local user. If you do not specify a user ID or set `userId` as `null`,
+   * the SDK returns a user ID in the \ref IRtcConnectionObserver::onConnected "onConnected"
+   * callback. Your app must record and maintain the `userId` since the SDK does not do so.
+  */
+  user_id_t userId;
+
+  /*
+  App can provide a app defined start time to trace some events like connect cost , first video, etc.
+  */
+  agora::Optional<int64_t> appDefinedStartTimeMs;
+};
+
 /**
  * The audio subscription options.
  */
@@ -148,6 +177,11 @@ struct RtcConnectionConfiguration {
   CHANNEL_PROFILE_TYPE  channelProfile;
 
   /**
+   * Determines whether to receive audio encoded frame or not.
+   */
+  bool audioRecvEncodedFrame;
+
+  /**
    * Determines whether to receive audio media packet or not.
    */
   bool audioRecvMediaPacket;
@@ -156,6 +190,15 @@ struct RtcConnectionConfiguration {
    * Determines whether to receive video media packet or not.
    */
   bool videoRecvMediaPacket;
+
+  /**
+   * This mode is only used for audience. In PK mode, client might join one
+   * channel as broadcaster, and join another channel as interactive audience to
+   * achieve low lentancy and smooth video from remote user.
+   * - true: Enable low lentancy and smooth video when joining as an audience.
+   * - false: (Default) Use default settings for audience role.
+   */
+  bool isInteractiveAudience;
 
   RtcConnectionConfiguration()
       : autoSubscribeAudio(true),
@@ -166,8 +209,10 @@ struct RtcConnectionConfiguration {
         maxPort(0),
         clientRoleType(CLIENT_ROLE_AUDIENCE),
         channelProfile(CHANNEL_PROFILE_LIVE_BROADCASTING),
+        audioRecvEncodedFrame(false),
         audioRecvMediaPacket(false),
-        videoRecvMediaPacket(false) {}
+        videoRecvMediaPacket(false),
+        isInteractiveAudience(false) {}
 };
 
 /**
@@ -213,6 +258,19 @@ class IRtcConnection : public RefCountInterface {
    *   - -8(ERR_INVALID_STATE): The current connection state is not CONNECTION_STATE_DISCONNECTED(1).
    */
   virtual int connect(const char* token, const char* channelId, user_id_t userId) = 0;
+
+  /**
+   * Connects to an Agora channel.
+   *
+   * When the method call succeeds, the connection state changes from `CONNECTION_STATE_DISCONNECTED(1)` to
+   * `CONNECTION_STATE_CONNECTING(2)`.
+   *
+   * Depending on the whether the connection succeeds or not, the
+   * connection state changes to either `CONNECTION_STATE_CONNECTED(3)` or `CONNECTION_STATE_FAILED(5)`. 
+   * The SDK also triggers `onConnected` or `onDisconnected` to notify you of the state change.
+   * @param settings The settings of connecting. 
+   */
+  virtual int connect(const TConnectSettings& settings) = 0;
 
   /**
    * Disconnects from the Agora channel.
@@ -637,7 +695,10 @@ class IRtcConnectionObserver {
   /**
    * Occurs when the local user fails to change the user role.
    */
-  virtual void onChangeRoleFailure() {}
+  virtual void onChangeRoleFailure(CLIENT_ROLE_CHANGE_FAILED_REASON reason, CLIENT_ROLE_TYPE currentRole) {
+    (void)reason;
+    (void)currentRole;
+  }
 
   /**
    * Reports the network quality of each user.
@@ -691,8 +752,7 @@ class IRtcConnectionObserver {
    * @param height image height
    * @param errCode 0 is ok negative is error
    */
-  virtual void onSnapshotTaken(const char* channel, uid_t uid, const char* filePath, int width, int height, int errCode) {
-    (void)channel;
+  virtual void onSnapshotTaken(uid_t uid, const char* filePath, int width, int height, int errCode) {
     (void)uid;
     (void)filePath;
     (void)width;
